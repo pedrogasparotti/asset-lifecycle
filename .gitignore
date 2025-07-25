@@ -11,13 +11,7 @@ __pycache__/
 logs/
 
 # Ignore data directories
-data/processed/
-data/raw/
-
-# Ignore model files
-models/*.png
-models/*.keras
-models/*.h5
+data/
 
 # Ignore personal configuration files
 .zshrc
@@ -30,4 +24,3 @@ models/*.h5
 *.csv
 *.npy
 *.h5
-hyperparam_tuning/autoencoder_optimization/trial_*/checkpoint.weights.h5

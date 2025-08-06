@@ -21,6 +21,5 @@ data/
 .DS_Store
 
 # Ignore data files
-*.csv
 *.npy
 *.h5

@@ -3,17 +3,16 @@ import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pathlib import Path
 
-def create_dataframe(file_name):
+def create_dataframe(file_path):
 
     # find path that contains the file
-    path = '../data/mockup_vector_state.csv'
+    path = Path.joinpath(Path.home(), file_path)
 
     raw_data = pd.read_csv(path, sep = ";")
 
     raw_dataframe = pd.DataFrame(raw_data)
-    
-    print(raw_dataframe.head())
 
     print(f"created dataframe from file in {path}")
 

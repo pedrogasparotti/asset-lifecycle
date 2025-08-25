@@ -19,7 +19,7 @@ def build_duration_regression(duration_df):
     Build regression model to predict years until Ruim state
     Focus on samples that actually reach Ruim
     """
-    # Filter to samples that will reach Ruim (can't predict duration for non-failures)
+    # Filter to samples that will reach Ruim
     failure_samples = duration_df[duration_df['will_reach_ruim'] == 1].copy()
     
     # Features for prediction

@@ -4,7 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 
-from preprocess import create_dataframe, separate_discrete_lifecycles, prepare_duration_features
+from preprocess import create_dataframe, separate_discrete_lifecycles
 
 from models import build_duration_regression, generate_prediction_output
 
@@ -12,10 +12,8 @@ if __name__ == '__main__':
 
     df = create_dataframe("Documents/github/asset-lifecycle/data/mockup_vector_state_test.csv")
 
-    lifecycle_df = separate_discrete_lifecycles(df)
+    historical_lifecycles, current_lifecycles = separate_discrete_lifecycles(df)
 
-    duration_df = prepare_duration_features(lifecycle_df)
+    print(historical_lifecycles.describe())
 
-    #build_duration_regression(duration_df)
-
-    #generate_prediction_output(lifecycle_df, duration_df)
+    print(current_lifecycles.describe())

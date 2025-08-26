@@ -90,91 +90,19 @@ def separate_discrete_lifecycles(df):
                 'final_state': final_state,
                 'duration_years': duration,
                 'degraded_within_lifecycle': degraded,
-                'target_failed': failed
+                'target_failed': failed,
+                'is_current': 1 if lc_idx == len(lifecycle_starts) - 2 else 0  # Last lifecycle
             })
     
     lifecycle_df = pd.DataFrame(all_lifecycles)
-    
-    print(f"=== DISCRETE LIFECYCLE ANALYSIS ===")
-    print(f"Original assets: {df['Serial'].nunique()}")  
-    print(f"Total discrete lifecycles: {len(lifecycle_df)}")
-    print(f"Avg lifecycles per asset: {len(lifecycle_df) / df['Serial'].nunique():.2f}")
-    print(f"Lifecycle duration distribution:")
-    print(lifecycle_df['duration_years'].value_counts().sort_index())
-    print(f"\nFailure rate by lifecycle:")
-    print(lifecycle_df['target_failed'].value_counts())
-    print(f"Overall failure rate: {lifecycle_df['target_failed'].mean()*100:.1f}%")
-    
-    print(lifecycle_df[lifecycle_df['target_failed'] == 1])
 
-    return lifecycle_df
+    # Filter first lifecycles (no way to know when it started)
+    lifecycle_df = lifecycle_df[~lifecycle_df['lifecycle_id'].str.contains('LC1')]
 
-def prepare_duration_features(lifecycle_df):
-    """
-    Transform lifecycles into duration prediction features
-    Predict years remaining until Ruim state
-    """
-    duration_samples = []
-    
-    for idx, row in lifecycle_df.iterrows():
-        sequence = row['lifecycle_sequence'].split()
-        
-        # Create training samples from each point in the lifecycle
-        for time_point in range(len(sequence)):
-            current_state = sequence[time_point]
-            years_elapsed = time_point + 1
-            years_remaining = len(sequence) - time_point
-            
-            # Skip if already at Ruim (no more degradation possible)
-            if current_state == 'Ruim':
-                continue
-                
-            # Historical context features
-            states_so_far = sequence[:time_point+1]
-            bom_count = states_so_far.count('Bom')
-            regular_count = states_so_far.count('Regular')
-            
-            # Degradation velocity
-            changes = 0
-            for i in range(len(states_so_far)-1):
-                if states_so_far[i] != states_so_far[i+1]:
-                    changes += 1
-            
-            degradation_rate = changes / years_elapsed if years_elapsed > 0 else 0
-            
-            # Will reach Ruim eventually in this lifecycle?
-            will_reach_ruim = 1 if 'Ruim' in sequence[time_point:] else 0
-            
-            # Years until Ruim (target)
-            years_to_ruim = None
-            for future_idx in range(time_point, len(sequence)):
-                if sequence[future_idx] == 'Ruim':
-                    years_to_ruim = future_idx - time_point
-                    break
-            
-            # If never reaches Ruim, use remaining lifecycle length
-            if years_to_ruim is None:
-                years_to_ruim = years_remaining
-                
-            duration_samples.append({
-                'lifecycle_id': row['lifecycle_id'],
-                'current_year': years_elapsed,
-                'current_state': current_state,
-                'years_elapsed': years_elapsed,
-                'bom_ratio': bom_count / years_elapsed,
-                'regular_ratio': regular_count / years_elapsed,
-                'degradation_rate': degradation_rate,
-                'will_reach_ruim': will_reach_ruim,
-                'years_to_ruim': years_to_ruim
-            })
-    
-    duration_df = pd.DataFrame(duration_samples)
-    
-    print(f"=== DURATION PREDICTION SETUP ===")
-    print(f"Training samples created: {len(duration_df)}")
-    print(f"Samples that reach Ruim: {duration_df['will_reach_ruim'].sum()}")
-    print(f"Average years to Ruim: {duration_df[duration_df['will_reach_ruim']==1]['years_to_ruim'].mean():.1f}")
-    print(f"Years to Ruim distribution:")
-    print(duration_df[duration_df['will_reach_ruim']==1]['years_to_ruim'].value_counts().sort_index())
-    
-    return duration_df
+    # Lifecycles with an end
+    historical_lifecycles = lifecycle_df[lifecycle_df['is_current'] == 0]
+
+    # Lifecycles that are active
+    current_lifecycles = lifecycle_df[lifecycle_df['is_current'] == 1]
+
+    return historical_lifecycles, current_lifecycles

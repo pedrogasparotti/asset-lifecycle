@@ -12,8 +12,6 @@ from sklearn.metrics import mean_absolute_error, r2_score
 import pandas as pd
 import numpy as np
 
-from plot import plot_failure_prediction_analysis
-
 def build_duration_regression(duration_df):
     """
     Build regression model to predict years until Ruim state

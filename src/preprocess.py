@@ -88,7 +88,7 @@ def separate_discrete_lifecycles(df):
                 'lifecycle_sequence': ' '.join(lifecycle_sequence),
                 'initial_state': initial_state,
                 'final_state': final_state,
-                'duration_years': duration,
+                'duration_months': duration * 12,
                 'degraded_within_lifecycle': degraded,
                 'target_failed': failed,
                 'is_current': 1 if lc_idx == len(lifecycle_starts) - 2 else 0  # Last lifecycle

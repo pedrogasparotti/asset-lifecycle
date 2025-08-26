@@ -4,88 +4,60 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_error
 
-def plot_failure_prediction_analysis(model, X_test, y_test, y_pred_test, duration_df):
+# Set matplotlib style and font
+plt.rcParams["figure.dpi"] = 300  # High-resolution output
+plt.rcParams["font.family"] = "DejaVu Sans"
+plt.rcParams["font.weight"] = "bold"
+
+# Colors from your style
+CYAN = "#00C4E6"
+ORANGE = "#F28C38"
+LIGHT_ORANGE = "#F5B270"
+GREEN = "#2CA02C"
+DARK_BG = "#1A2526"
+WHITE = "#FFFFFF"
+
+def simple_duration_histogram(merged_df, bins=30):
     """
-    Generate the sexy curves your stakeholders crave
+    Simple, clean histogram for quick analysis
     """
-    plt.style.use('seaborn-v0_8')
-    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-    fig.suptitle('Asset Failure Prediction Model - Executive Summary', fontsize=16, fontweight='bold')
+    duration_data = merged_df['duration_months'].dropna()
     
-    # Prediction vs Reality - The Money Shot
-    axes[0,0].scatter(y_test, y_pred_test, alpha=0.7, color='darkblue', s=60)
-    axes[0,0].plot([0, 5], [0, 5], 'r--', linewidth=2, label='Perfect Prediction')
-    axes[0,0].set_xlabel('Actual Years to Failure')
-    axes[0,0].set_ylabel('Predicted Years to Failure') 
-    axes[0,0].set_title('Prediction Accuracy\n(Closer to red line = better)')
-    axes[0,0].legend()
-    axes[0,0].grid(True, alpha=0.3)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    fig.set_facecolor(DARK_BG)
+    ax.set_facecolor(DARK_BG)
     
-    # Residuals - Show the spread
-    residuals = y_test.values - y_pred_test
-    axes[0,1].scatter(y_pred_test, residuals, alpha=0.7, color='darkgreen', s=60)
-    axes[0,1].axhline(y=0, color='r', linestyle='--', linewidth=2)
-    axes[0,1].set_xlabel('Predicted Years to Failure')
-    axes[0,1].set_ylabel('Prediction Error (Actual - Predicted)')
-    axes[0,1].set_title('Model Residuals\n(Random scatter around zero = good)')
-    axes[0,1].grid(True, alpha=0.3)
+    # Create histogram
+    n, bins_edges, patches = ax.hist(duration_data, bins=bins, alpha=0.7, color=CYAN, edgecolor=WHITE)
     
-    # Failure Distribution by Current State - The Business Insight
-    failure_samples = duration_df[duration_df['will_reach_ruim'] == 1]
-    state_failure_dist = failure_samples.groupby('current_state')['years_to_ruim'].apply(list)
+    # Add statistics
+    ax.axvline(duration_data.mean(), color=ORANGE, linestyle='--', linewidth=2, 
+               label=f'Média: {duration_data.mean():.1f} meses')
+    ax.axvline(duration_data.median(), color=GREEN, linestyle='--', linewidth=2, 
+               label=f'Mediana: {duration_data.median():.1f} meses')
     
-    box_data = [state_failure_dist.get('Bom', []), state_failure_dist.get('Regular', [])]
-    box_labels = ['Bom Assets', 'Regular Assets']
+    ax.set_title('Distribuição de Duração do Ciclo de Vida', color=WHITE, fontsize=14, fontweight='bold')
+    ax.set_xlabel('Duração (meses)', color=WHITE, fontsize=12)
+    ax.set_ylabel('Frequência', color=WHITE, fontsize=12)
     
-    bp = axes[1,0].boxplot(box_data, labels=box_labels, patch_artist=True)
-    bp['boxes'][0].set_facecolor('lightgreen')
-    bp['boxes'][1].set_facecolor('orange')
-    axes[1,0].set_ylabel('Years Until Failure')
-    axes[1,0].set_title('Failure Timeline by Asset Condition\n(Lower = More Urgent)')
-    axes[1,0].grid(True, alpha=0.3)
+    # Style
+    ax.grid(True, alpha=0.3, color=WHITE)
+    ax.tick_params(colors=WHITE)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
     
-    # Model Performance Over Time - The Confidence Curve
-    time_horizons = np.arange(0.5, 4.5, 0.5)
-    mae_by_horizon = []
-    sample_counts = []
+    # Legend
+    legend = ax.legend(fontsize=10, loc='upper right')
+    legend.get_frame().set_facecolor(DARK_BG)
+    legend.get_frame().set_edgecolor(WHITE)
+    for text in legend.get_texts():
+        text.set_color(WHITE)
     
-    for horizon in time_horizons:
-        mask = y_test <= horizon
-        if mask.sum() > 5:  # Need minimum samples
-            horizon_mae = mean_absolute_error(y_test[mask], y_pred_test[mask])
-            mae_by_horizon.append(horizon_mae)
-            sample_counts.append(mask.sum())
-        else:
-            mae_by_horizon.append(np.nan)
-            sample_counts.append(0)
-    
-    # Plot MAE curve
-    valid_idx = ~np.isnan(mae_by_horizon)
-    axes[1,1].plot(time_horizons[valid_idx], np.array(mae_by_horizon)[valid_idx], 
-                   'o-', linewidth=3, markersize=8, color='purple')
-    axes[1,1].set_xlabel('Prediction Horizon (Years)')
-    axes[1,1].set_ylabel('Mean Absolute Error (Years)')
-    axes[1,1].set_title('Model Accuracy vs Prediction Distance\n(Flatter = More Reliable)')
-    axes[1,1].grid(True, alpha=0.3)
-    
-    # Add sample size annotations
-    ax2 = axes[1,1].twinx()
-    ax2.bar(time_horizons, sample_counts, alpha=0.3, color='gray', width=0.2)
-    ax2.set_ylabel('Sample Size', color='gray')
-    ax2.tick_params(axis='y', labelcolor='gray')
+    # Add statistics box
+    stats_text = f"N = {len(duration_data)}\nDesvio Padrão = {duration_data.std():.1f}\nMín = {duration_data.min():.1f}\nMáx = {duration_data.max():.1f}"
+    props = dict(boxstyle='round,pad=0.5', facecolor=DARK_BG, edgecolor=CYAN, alpha=0.8)
+    ax.text(0.75, 0.95, stats_text, transform=ax.transAxes, fontsize=9,
+            verticalalignment='top', color=CYAN, bbox=props)
     
     plt.tight_layout()
-    
-    # Save to outputs directory
-    import os
-    os.makedirs('../outputs', exist_ok=True)
-    plt.savefig('../outputs/failure_prediction_analysis.png', dpi=300, bbox_inches='tight')
     plt.show()
-    
-    # The executive summary stats
-    print("\n=== EXECUTIVE SUMMARY ===")
-    print(f"Model Performance: Predicts failure timing within ±{mean_absolute_error(y_test, y_pred_test):.1f} years")
-    print(f"Best Accuracy: {(np.abs(residuals) <= 0.5).mean()*100:.0f}% of predictions within 6 months")
-    print(f"Critical Assets: {len(failure_samples[failure_samples['current_state']=='Regular'])} Regular assets need immediate attention")
-    print(f"Stable Assets: {len(failure_samples[failure_samples['current_state']=='Bom'])} Bom assets in failure pipeline")
-    print(f"Data Coverage: Model trained on {len(y_test) + len(X_test)} real failure scenarios")

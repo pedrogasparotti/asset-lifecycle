@@ -8,12 +8,23 @@ from preprocess import create_dataframe, separate_discrete_lifecycles
 
 from models import build_duration_regression, generate_prediction_output
 
+from pathlib import Path
+
+from plot import simple_duration_histogram
+
 if __name__ == '__main__':
 
     df = create_dataframe("Documents/github/asset-lifecycle/data/mockup_vector_state_test.csv")
+    
+    df_kartado = pd.read_csv(Path.joinpath(Path.home() , "Documents/github/asset-lifecycle/data/tabela_kartado.csv"))
 
     historical_lifecycles, current_lifecycles = separate_discrete_lifecycles(df)
 
-    print(historical_lifecycles.describe())
+    merged_with_km = historical_lifecycles.merge(df_kartado[['original_serial', 'km']],
+                                                 on='original_serial',
+                                                 how='left'
+                                                 )
 
-    print(current_lifecycles.describe())
+    print(merged_with_km.columns)
+
+    simple_duration_histogram(merged_with_km)
